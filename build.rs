@@ -1,5 +1,4 @@
 use std::{
-    fmt::Display,
     fs,
     io::{self, Write},
 };
