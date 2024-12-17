@@ -11,7 +11,7 @@ anyhow = "1"
 curl = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-zip = "2"
+zip = { version = "2", features = ["deflate"], default-features = false }
 
 [dev-dependencies]
 rspirv = "0.12"
