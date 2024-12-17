@@ -55,35 +55,33 @@ impl SlangArch {
 }
 
 fn main() {
-    // let str = String::from_utf8(req(
-    //     "https://api.github.com/repos/shader-slang/slang/releases/latest",
-    // ))
-    // .unwrap();
-    // let Ok(root): Result<serde::GithubReleaseOverviewItem, serde_json::Error> =
-    //     serde_json::from_str(&str)
-    // else {
-    //     panic!(
-    //         "Failed to deserialize from json, the str input was: {}",
-    //         str
-    //     );
-    // };
+    let str = String::from_utf8(req(
+        "https://api.github.com/repos/shader-slang/slang/releases/latest",
+    ))
+    .unwrap();
+    let Ok(root): Result<serde::GithubReleaseOverviewItem, serde_json::Error> =
+        serde_json::from_str(&str)
+    else {
+        panic!(
+            "Failed to deserialize from json, the str input was: {}",
+            str
+        );
+    };
 
-    // let target = std::env::var("TARGET").unwrap();
-    // let parts = target.split('-').collect::<Vec<_>>();
-    // let arch = SlangArch::from_str(parts[0]);
-    // let os = SlangOs::from_str(parts[1]);
-    // let to_find = format!("{}-{}.zip", os.to_str(), arch.to_str());
-    // // panic!("Looking for: {}", to_find);
-    // let asset = root
-    //     .assets
-    //     .iter()
-    //     .find(|asset| asset.name.ends_with(&to_find))
-    //     .expect("Failed to find release asset with supported arch and os combination");
+    let target = std::env::var("TARGET").unwrap();
+    let parts = target.split('-').collect::<Vec<_>>();
+    let arch = SlangArch::from_str(parts[0]);
+    let os = SlangOs::from_str(parts[1]);
+    let to_find = format!("{}-{}.zip", os.to_str(), arch.to_str());
+    // panic!("Looking for: {}", to_find);
+    let asset = root
+        .assets
+        .iter()
+        .find(|asset| asset.name.ends_with(&to_find))
+        .expect("Failed to find release asset with supported arch and os combination");
 
-    // let download_url = &asset.browser_download_url;
-    let download_url = "https://github.com/shader-slang/slang/releases/download/v2024.17/slang-2024.17-macos-x86_64.zip";
+    let download_url = &asset.browser_download_url;
 
-    // panic!("Asset found: {}", asset.browser_download_url);
     let out_path = std::env::var("OUT_DIR").unwrap();
     let out_path = std::path::Path::new(&out_path).join("slang.zip");
 
@@ -94,49 +92,42 @@ fn main() {
     }
 
     // lets unzip
+    let target_dir = std::path::Path::new(&out_path).parent().unwrap().join("slang");
+    fs::create_dir_all(&target_dir).unwrap();
+
     let mut archive = zip::ZipArchive::new(std::fs::File::open(&out_path).unwrap()).unwrap();
     for i in 0..archive.len() {
-        let mut file = archive.by_index(i).unwrap();
-        let outpath = match file.enclosed_name() {
-            Some(path) => path,
-            None => continue,
-        };
+      let mut file = archive.by_index(i).unwrap();
+      let outpath = match file.enclosed_name() {
+        Some(path) => target_dir.join(path),
+        None => continue,
+      };
 
-        let comment = file.comment();
-        if !comment.is_empty() {
-            println!("File {i} comment: {comment}");
+      if file.is_dir() {
+        fs::create_dir_all(&outpath).unwrap();
+      } else {
+        if let Some(p) = outpath.parent() {
+          if !p.exists() {
+            fs::create_dir_all(p).unwrap();
+          }
         }
+        let mut outfile = fs::File::create(&outpath).unwrap();
+        io::copy(&mut file, &mut outfile).unwrap();
+      }
 
-        if file.is_dir() {
-            println!("File {} extracted to \"{}\"", i, outpath.display());
-            fs::create_dir_all(&outpath).unwrap();
-        } else {
-            println!(
-                "File {} extracted to \"{}\" ({} bytes)",
-                i,
-                outpath.display(),
-                file.size()
-            );
-            if let Some(p) = outpath.parent() {
-                if !p.exists() {
-                    fs::create_dir_all(p).unwrap();
-                }
-            }
-            let mut outfile = fs::File::create(&outpath).unwrap();
-            io::copy(&mut file, &mut outfile).unwrap();
+      // Get and Set permissions
+      #[cfg(unix)]
+      {
+        use std::os::unix::fs::PermissionsExt;
+
+        if let Some(mode) = file.unix_mode() {
+          fs::set_permissions(&outpath, fs::Permissions::from_mode(mode)).unwrap();
         }
-
-        // Get and Set permissions
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-
-            if let Some(mode) = file.unix_mode() {
-                fs::set_permissions(&outpath, fs::Permissions::from_mode(mode)).unwrap();
-            }
-        }
+      }
     }
 
+    let bin_folder = target_dir.join("bin/slangc");
+    println!("cargo:rustc-env=SLANGC_BIN_PATH={}", bin_folder.display());
     println!("cargo:rerun-if-changed=build.rs");
 }
 

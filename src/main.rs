@@ -1,3 +1,5 @@
+use slang_cli_rs::print_help_info;
+
 fn main() {
-    println!("Hello, world!");
+  print_help_info().unwrap();
 }
