@@ -41,7 +41,6 @@ impl Stage {
     }
 }
 
-
 pub struct CompileShaderOptions<'a> {
     /// -stage <stage>: Specify the stage of an entry-point function.
     pub stage: Option<Stage>,
@@ -52,15 +51,13 @@ pub struct CompileShaderOptions<'a> {
     /// -target <target>: Specify the target language.
     pub target: Option<&'a str>,
     /// File to compile
-    pub file: &'a str
+    pub file: &'a str,
 }
 
-pub fn compile_shader(
-    options: &CompileShaderOptions,
-) -> Result<Vec<u8>> {
-    let var = env::var("SLANGC_BIN_PATH").unwrap();
+const SLANGC_BIN_PATH: &'static str = env!("SLANGC_BIN_PATH");
 
-    let mut command = std::process::Command::new(&var);
+pub fn compile_shader(options: &CompileShaderOptions) -> Result<Vec<u8>> {
+    let mut command = std::process::Command::new(SLANGC_BIN_PATH);
 
     if let Some(stage) = options.stage.as_ref() {
         command.arg("-stage").arg(stage.to_str());
@@ -76,18 +73,21 @@ pub fn compile_shader(
     }
 
     command.arg(options.file);
-        
+
     let output = command.output().unwrap();
     if !output.status.success() {
-        return Err(anyhow::anyhow!(String::from_utf8(output.stderr.clone()).unwrap()));
+        return Err(anyhow::anyhow!(
+            String::from_utf8(output.stderr.clone()).unwrap()
+        ));
     }
 
     Ok(output.stdout)
 }
 
 pub fn print_help_info() -> Result<()> {
-    let var = env::var("SLANGC_BIN_PATH")?;
-    let output = std::process::Command::new(var).arg("-help").output()?;
+    let output = std::process::Command::new(SLANGC_BIN_PATH)
+        .arg("-help")
+        .output()?;
     println!("slangc help: {}", String::from_utf8_lossy(&output.stderr));
     Ok(())
 }
