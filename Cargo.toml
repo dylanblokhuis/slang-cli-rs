@@ -8,10 +8,16 @@ build = "build.rs"
 anyhow = "1"
 
 [build-dependencies]
-curl = "0.4"
+curl = { version = "0.4", optional = true }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "default-tls"], optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 zip = { version = "2", features = ["deflate"], default-features = false }
 
 [dev-dependencies]
 rspirv = "0.12"
+
+[features]
+default = ["use-curl"]
+use-curl = ["dep:curl"]
+use-reqwest = ["dep:reqwest"]
