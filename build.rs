@@ -4,7 +4,6 @@ use std::{
     io::{self, Write},
 };
 
-use curl::easy::Easy;
 
 #[derive(Debug)]
 enum SlangOs {
@@ -135,10 +134,11 @@ fn main() {
     println!("cargo:rustc-env=SLANGC_BIN_PATH={}", bin_folder.display());
 }
 
+#[cfg(feature = "use-curl")]
 fn req(url: &str) -> Vec<u8> {
     let mut bytes = Vec::new();
     {
-        let mut easy = Easy::new();
+        let mut easy = curl::easy::Easy::new();
         easy.url(url).unwrap();
         easy.follow_location(true).unwrap();
         // required by GitHub API
@@ -155,6 +155,13 @@ fn req(url: &str) -> Vec<u8> {
     }
     assert!(!bytes.is_empty());
     bytes
+}
+
+#[cfg(feature = "use-reqwest")]
+fn req(url: &str) -> Vec<u8> {
+    let res = reqwest::blocking::get(url).unwrap();
+    assert!(res.status().is_success());
+    res.bytes().unwrap().to_vec()
 }
 
 mod serde {
