@@ -54,6 +54,22 @@ impl SlangArch {
 }
 
 fn main() {
+    
+    #[cfg(any(feature = "use-curl", feature = "use-reqwest"))]
+    let slang_bin_folder = download_slang_bin();
+
+    #[cfg(feature = "use-vulkan-sdk")]
+    let slang_bin_folder = {
+        let vulkan_sdk_path = std::env::var("VULKAN_SDK").unwrap();
+        return format!("{}/bin/slangc", vulkan_sdk_path);
+    };
+
+    println!("cargo:rustc-env=SLANGC_BIN_PATH={}", slang_bin_folder);
+    println!("cargo:rerun-if-changed=build.rs");
+}
+
+#[cfg(any(feature = "use-curl", feature = "use-reqwest"))]
+fn download_slang_bin() -> String {
     let target = std::env::var("TARGET").unwrap();
     let parts = target.split('-').collect::<Vec<_>>();
     let arch = SlangArch::from_str(parts[0]);
@@ -130,9 +146,9 @@ fn main() {
     }
 
     let bin_folder = target_dir.join("bin/slangc");
-    println!("cargo:rustc-env=SLANGC_BIN_PATH={}", bin_folder.display());
-    println!("cargo:rerun-if-changed=build.rs");
+    return bin_folder.display().to_string();
 }
+
 
 #[cfg(feature = "use-curl")]
 fn req(url: &str) -> Vec<u8> {
@@ -164,6 +180,7 @@ fn req(url: &str) -> Vec<u8> {
     res.bytes().unwrap().to_vec()
 }
 
+#[cfg(any(feature = "use-curl", feature = "use-reqwest"))]
 mod serde {
     use serde::Deserialize;
     use serde::Serialize;
