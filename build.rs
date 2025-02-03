@@ -4,7 +4,6 @@ use std::{
     io::{self, Write},
 };
 
-
 #[derive(Debug)]
 enum SlangOs {
     Linux,
@@ -54,22 +53,22 @@ impl SlangArch {
 }
 
 fn main() {
-    
     #[cfg(any(feature = "use-curl", feature = "use-reqwest"))]
-    let slang_bin_folder = download_slang_bin();
+    let slang_folder = download_slang();
 
     #[cfg(feature = "use-vulkan-sdk")]
-    let slang_bin_folder = {
-        let vulkan_sdk_path = std::env::var("VULKAN_SDK").unwrap();
-        return format!("{}/bin/slangc", vulkan_sdk_path);
-    };
+    let slang_folder = std::env::var("VULKAN_SDK").unwrap();
 
-    println!("cargo:rustc-env=SLANGC_BIN_PATH={}", slang_bin_folder);
+    println!(
+        "cargo:rustc-env=SLANGC_BIN_PATH={}/bin/slangc",
+        slang_folder
+    );    
+    println!("cargo:rustc-link-search=native={}/lib", slang_folder);
     println!("cargo:rerun-if-changed=build.rs");
 }
 
 #[cfg(any(feature = "use-curl", feature = "use-reqwest"))]
-fn download_slang_bin() -> String {
+fn download_slang() -> String {
     let target = std::env::var("TARGET").unwrap();
     let parts = target.split('-').collect::<Vec<_>>();
     let arch = SlangArch::from_str(parts[0]);
@@ -145,10 +144,9 @@ fn download_slang_bin() -> String {
         }
     }
 
-    let bin_folder = target_dir.join("bin/slangc");
-    return bin_folder.display().to_string();
+    // let bin_folder = target_dir.join("bin/slangc");
+    return target_dir.display().to_string();
 }
-
 
 #[cfg(feature = "use-curl")]
 fn req(url: &str) -> Vec<u8> {
