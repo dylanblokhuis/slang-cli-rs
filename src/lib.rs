@@ -52,6 +52,7 @@ pub struct CompileShaderOptions<'a> {
     pub target: Option<&'a str>,
     /// File to compile
     pub file: &'a str,
+    pub extra_args: Vec<&'a str>,
 }
 
 const SLANGC_BIN_PATH: &'static str = env!("SLANGC_BIN_PATH");
@@ -70,6 +71,10 @@ pub fn compile_shader(options: &CompileShaderOptions) -> Result<Vec<u8>> {
     }
     if let Some(target) = options.target {
         command.arg("-target").arg(target);
+    }
+
+    for arg in &options.extra_args {
+        command.arg(arg);
     }
 
     command.arg(options.file);
@@ -98,10 +103,11 @@ fn test_compile_shader() {
 
     let data = match compile_shader(&CompileShaderOptions {
         stage: Some(Stage::Vertex),
-        profile: Some("spirv_1_6"),
+        profile: Some("glsl_460"),
         entry_point: Some("vertexMain"),
         target: Some("spirv"),
         file: "test-shaders/bindless_triangle.slang",
+        extra_args: vec!["-force-glsl-scalar-layout", "-emit-spirv-directly"],
     }) {
         Ok(data) => data,
         Err(e) => {
@@ -114,7 +120,9 @@ fn test_compile_shader() {
     let module = loader.module();
     let dis = module.disassemble();
 
+    println!("Disassembled SPIR-V:\n{}", dis);
+
     assert!(dis.contains("OpCapability Shader"));
     assert!(dis.contains("vertexMain"));
-    assert!(dis.contains("Version: 1.6"));
+    assert!(dis.contains("Version: 1.3"));
 }
