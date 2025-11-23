@@ -53,11 +53,10 @@ impl SlangArch {
 }
 
 fn main() {
-    #[cfg(any(feature = "use-curl", feature = "use-reqwest"))]
-    let slang_folder = download_slang();
-
-    #[cfg(feature = "use-vulkan-sdk")]
-    let slang_folder = std::env::var("VULKAN_SDK").unwrap();
+    let slang_folder = match std::env::var("SLANG_DIR") {
+        Ok(dir) => dir,
+        Err(_) => resolve_slang_dir(),
+    };
 
     println!(
         "cargo:rustc-env=SLANGC_BIN_PATH={}/bin/slangc",
@@ -65,6 +64,25 @@ fn main() {
     );    
     println!("cargo:rustc-link-search=native={}/lib", slang_folder);
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-env-changed=SLANG_DIR");
+}
+
+fn resolve_slang_dir() -> String {
+    #[cfg(feature = "use-vulkan-sdk")]
+    {
+        return std::env::var("VULKAN_SDK")
+            .expect("VULKAN_SDK must be set when using the use-vulkan-sdk feature");
+    }
+
+    #[cfg(any(feature = "use-curl", feature = "use-reqwest"))]
+    {
+        return download_slang();
+    }
+
+    #[cfg(not(any(feature = "use-curl", feature = "use-reqwest", feature = "use-vulkan-sdk")))]
+    {
+        panic!("Set SLANG_DIR or enable one of: use-curl, use-reqwest, use-vulkan-sdk");
+    }
 }
 
 #[cfg(any(feature = "use-curl", feature = "use-reqwest"))]

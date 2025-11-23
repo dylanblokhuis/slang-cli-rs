@@ -93,7 +93,7 @@ pub fn print_help_info() -> Result<()> {
     let output = std::process::Command::new(SLANGC_BIN_PATH)
         .arg("-help")
         .output()?;
-    println!("slangc help: {}", String::from_utf8_lossy(&output.stderr));
+    println!("slangc help: {}", String::from_utf8_lossy(&output.stdout));
     Ok(())
 }
 

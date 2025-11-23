@@ -18,7 +18,7 @@ zip = { version = "2", features = ["deflate"], default-features = false, optiona
 rspirv = "0.12"
 
 [features]
-default = ["use-curl"]
+default = []
 use-curl = ["dep:curl", "dep:zip", "dep:serde", "dep:serde_json"]
 use-reqwest = ["dep:reqwest", "dep:zip", "dep:serde", "dep:serde_json"]
 use-vulkan-sdk = []
