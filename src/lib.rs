@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 /// -stage <stage>: Specify the stage of an entry-point function.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy)]
 pub enum Stage {
     Vertex,
     Hull,
