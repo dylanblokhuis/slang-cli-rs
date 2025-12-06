@@ -1,8 +1,11 @@
 use std::env;
 
 use anyhow::Result;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// -stage <stage>: Specify the stage of an entry-point function.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Stage {
     Vertex,
     Hull,
